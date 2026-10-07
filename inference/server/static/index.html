@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM Inference Engine &mdash; Telemetry & Control Dashboard</title>
+  <meta name="description" content="Production LLM Inference Server Dashboard with real-time GPU utilization, continuous batching metrics, streaming playground, and load tester.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo-badge">
+          <span class="pulsing-dot"></span>
+          <h1>LLM INFERENCE ENGINE</h1>
+        </div>
+        <span class="version-tag">v1.0 &bull; Continuous Batching &bull; Quantized</span>
+      </div>
+      <div class="header-right">
+        <div class="status-chip" id="engineStatusChip">
+          <span class="chip-dot"></span>
+          <span id="engineStatusText">ENGINE ONLINE</span>
+        </div>
+        <div class="chip device-chip" id="deviceChip">
+          <span class="chip-icon">⚡</span>
+          <span id="deviceName">Detecting...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Top Telemetry Row -->
+    <section class="telemetry-grid">
+      <!-- GPU Card -->
+      <div class="metric-card glow-card">
+        <div class="card-header">
+          <span class="card-title">GPU / ACCELERATOR UTILIZATION</span>
+          <span class="badge" id="gpuDeviceType">MPS</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-big-val" id="gpuUtilVal">0%</div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="gpuUtilBar" style="width: 0%"></div>
+          </div>
+          <div class="metric-sub-stats">
+            <span>Peak VRAM: <strong id="peakVramVal">0 MB</strong></span>
+            <span>Allocated: <strong id="vramUsedVal">0 MB</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Throughput Card -->
+      <div class="metric-card">
+        <div class="card-header">
+          <span class="card-title">GENERATION THROUGHPUT</span>
+          <span class="badge badge-accent">SPEED</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-big-val" id="throughputVal">0.0 <span class="unit">tok/s</span></div>
+          <div class="metric-sub-stats">
+            <span>Req Throughput: <strong id="rpsVal">0.0 req/s</strong></span>
+            <span>Completed: <strong id="completedReqsVal">0</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Batching Card -->
+      <div class="metric-card">
+        <div class="card-header">
+          <span class="card-title">SCHEDULER & BATCHING</span>
+          <span class="badge badge-info" id="schedulerPolicyBadge">CONTINUOUS</span>
+        </div>
+        <div class="metric-body">
+          <div class="metric-big-val"><span id="runningSeqsVal">0</span> <span class="unit">/ <span id="maxBatchVal">16</span> active</span></div>
+          <div class="metric-sub-stats">
+            <span>Queue Depth: <strong id="queueDepthVal">0</strong></span>
+            <span>Max Capacity: <strong id="maxBatchSubVal">16 slots</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Latency Summary Card -->
+      <div class="metric-card">
+        <div class="card-header">
+          <span class="card-title">LATENCY PERCENTILES</span>
+          <span class="badge badge-success">P50 / P90</span>
+        </div>
+        <div class="metric-body">
+          <div class="latency-row">
+            <span class="label">TTFT:</span>
+            <span class="val" id="ttftP50Val">-- ms</span>
+            <span class="sub-val" id="ttftP90Val">(-- ms p90)</span>
+          </div>
+          <div class="latency-row">
+            <span class="label">TPOT:</span>
+            <span class="val" id="tpotP50Val">-- ms</span>
+            <span class="sub-val" id="tpotP90Val">(-- ms p90)</span>
+          </div>
+          <div class="latency-row">
+            <span class="label">E2E:</span>
+            <span class="val" id="e2eP50Val">-- ms</span>
+            <span class="sub-val" id="e2eP90Val">(-- ms p90)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Workspace: Split between Streaming Playground and Load Tester -->
+    <main class="main-workspace">
+      <!-- Left: Interactive Streaming Playground -->
+      <section class="panel playground-panel">
+        <div class="panel-header">
+          <h2>Interactive Model Playground</h2>
+          <span class="subtitle">Real-time SSE token streaming &amp; dynamic latency breakdown</span>
+        </div>
+
+        <div class="playground-controls">
+          <div class="form-group">
+            <label for="promptInput">Prompt:</label>
+            <textarea id="promptInput" rows="3" placeholder="Enter a prompt here...">Explain how continuous batching optimizes GPU memory bandwidth in LLM serving.</textarea>
+          </div>
+
+          <div class="sliders-row">
+            <div class="slider-group">
+              <label for="maxTokensSlider">Max Tokens: <span id="maxTokensVal">64</span></label>
+              <input type="range" id="maxTokensSlider" min="8" max="256" value="64">
+            </div>
+            <div class="slider-group">
+              <label for="tempSlider">Temperature: <span id="tempVal">0.7</span></label>
+              <input type="range" id="tempSlider" min="0" max="1.5" step="0.1" value="0.7">
+            </div>
+          </div>
+
+          <div class="actions-row">
+            <button id="btnGenerate" class="btn btn-primary">
+              <span class="btn-text">Generate Stream</span>
+              <span class="btn-loader" style="display:none;"></span>
+            </button>
+            <button id="btnClear" class="btn btn-secondary">Clear Output</button>
+          </div>
+        </div>
+
+        <div class="output-container">
+          <div class="output-header">
+            <span>Generated Output</span>
+            <div id="playgroundLatencyBadge" class="latency-tags" style="display:none;">
+              <span class="tag" id="pgTtftTag">TTFT: --</span>
+              <span class="tag" id="pgTpotTag">TPOT: --</span>
+              <span class="tag" id="pgE2eTag">E2E: --</span>
+            </div>
+          </div>
+          <div class="output-box" id="outputBox">Tokens will stream here in real time...</div>
+        </div>
+      </section>
+
+      <!-- Right: Real-Time Load Testing & Benchmarking Suite -->
+      <section class="panel loadtest-panel">
+        <div class="panel-header">
+          <h2>Asynchronous Load Tester</h2>
+          <span class="subtitle">Stress test batching, concurrency &amp; throughput</span>
+        </div>
+
+        <div class="loadtest-controls">
+          <div class="sliders-row">
+            <div class="slider-group">
+              <label for="ltConcurrency">Concurrent Users: <span id="ltConcurrencyVal">4</span></label>
+              <input type="range" id="ltConcurrency" min="1" max="16" value="4">
+            </div>
+            <div class="slider-group">
+              <label for="ltTotalRequests">Total Requests: <span id="ltTotalReqVal">12</span></label>
+              <input type="range" id="ltTotalRequests" min="4" max="32" step="2" value="12">
+            </div>
+          </div>
+
+          <div class="actions-row">
+            <button id="btnRunLoadTest" class="btn btn-accent">
+              <span class="btn-text">Start Load Test</span>
+              <span class="btn-loader" style="display:none;"></span>
+            </button>
+          </div>
+
+          <div class="loadtest-progress" id="ltProgressContainer" style="display: none;">
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill accent-fill" id="ltProgressBar" style="width: 0%"></div>
+            </div>
+            <div class="progress-labels">
+              <span id="ltProgressText">0 / 12 completed</span>
+              <span id="ltStatusText">Running...</span>
+            </div>
+          </div>
+
+          <div class="loadtest-results" id="ltResultsCard" style="display:none;">
+            <h3>Load Test Summary</h3>
+            <div class="results-grid">
+              <div class="res-item">
+                <span class="res-label">Completed</span>
+                <span class="res-val text-success" id="ltResSuccess">0/0</span>
+              </div>
+              <div class="res-item">
+                <span class="res-label">Throughput</span>
+                <span class="res-val" id="ltResThroughput">0 tok/s</span>
+              </div>
+              <div class="res-item">
+                <span class="res-label">Avg TTFT</span>
+                <span class="res-val" id="ltResTtft">0 ms</span>
+              </div>
+              <div class="res-item">
+                <span class="res-label">Avg TPOT</span>
+                <span class="res-val" id="ltResTpot">0 ms</span>
+              </div>
+              <div class="res-item">
+                <span class="res-label">P95 Latency</span>
+                <span class="res-val" id="ltResP95">0 ms</span>
+              </div>
+              <div class="res-item">
+                <span class="res-label">Avg E2E</span>
+                <span class="res-val" id="ltResE2e">0 ms</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="system-specs-card">
+          <h4>Engine Architecture Overview</h4>
+          <ul class="specs-list">
+            <li><strong>Model:</strong> <span id="specModelId">Qwen/Qwen2.5-0.5B</span></li>
+            <li><strong>Precision:</strong> <span id="specPrecision">FP16 / Group Quantized</span></li>
+            <li><strong>Batch Policy:</strong> <span id="specBatchPolicy">Continuous (Iteration-Level)</span></li>
+            <li><strong>KV Cache:</strong> DynamicCache (Zero-waste decode)</li>
+            <li><strong>API:</strong> OpenAI Compatible (/v1/chat/completions) + Native</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

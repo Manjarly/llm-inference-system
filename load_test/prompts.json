@@ -1,0 +1,12 @@
+[
+  "Explain the core concept of continuous batching in modern LLM serving architectures.",
+  "What is the difference between Time to First Token (TTFT) and Inter-Token Latency (ITL)?",
+  "How does 4-bit group quantization affect transformer attention mechanisms?",
+  "Describe how memory bandwidth saturation becomes a bottleneck during autoregressive decoding.",
+  "Write a concise explanation of how KV-cache reuse prevents recomputation of past tokens.",
+  "What are the trade-offs between static micro-batching and iteration-level continuous batching?",
+  "Explain how Apple Silicon Unified Memory Architecture differs from discrete PCIe GPU VRAM.",
+  "How does top-p nucleus sampling differ from greedy argmax decoding in text generation?",
+  "What strategies can be employed to optimize Time to First Token under high concurrent load?",
+  "Discuss how model parallelism differs from pipeline parallelism and tensor parallelism."
+]

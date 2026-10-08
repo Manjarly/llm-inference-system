@@ -71,7 +71,7 @@ This is **not a chatbot**. It is a transparent, high-performance miniature of th
 ## Research Paper: Systems Technical Report
 
 📄 **Research Paper (PDF)**: [**Beyond Parameter Scaling: A Full-Lifecycle Systems Study of LLM Adaptation, Alignment, and High-Throughput Serving (PDF)**](paper/Beyond_Parameter_Scaling__A_Full_Lifecycle_Systems_Study_of_LLM_Adaptation__Alignment__and_High_Throughput_Serving.pdf)  
-*Full 6-page technical report in IEEE/ACM conference format by Amit Manjarly. (Source LaTeX: `paper/paper.tex`)*
+*Full 6-page technical report in IEEE/ACM conference format by Amit Manjarly. (Source LaTeX: `paper/Beyond_Parameter_Scaling__A_Full_Lifecycle_Systems_Study_of_LLM_Adaptation__Alignment__and_High_Throughput_Serving.pdf`)*
 
 ### Abstract
 

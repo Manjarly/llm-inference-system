@@ -4,7 +4,7 @@
 [![Architecture](https://img.shields.io/badge/Architecture-Full--Lifecycle%20LLM%20Platform-blue)](frontier_platform/)
 [![Serving](https://img.shields.io/badge/Serving-Continuous%20Batching-orange)](inference/)
 [![Hardware](https://img.shields.io/badge/Hardware-Apple%20MPS%20%7C%20NVIDIA%20CUDA-green)](inference/monitor/)
-[![Research Paper](https://img.shields.io/badge/Paper-Systems%20Technical%20Report-purple)](paper/RESEARCH_PAPER.md)
+[![Research Paper](https://img.shields.io/badge/Paper-PDF%20Research%20Paper-purple)](paper/Beyond_Parameter_Scaling__A_Full_Lifecycle_Systems_Study_of_LLM_Adaptation__Alignment__and_High_Throughput_Serving.pdf)
 
 A production-grade, full-lifecycle engineering platform modeling the infrastructure surrounding modern frontier Large Language Models (LLMs) &mdash; mirroring systems architectures powering **LLaMA 3**, **DeepSeek-V3/R1**, and **Qwen 2.5**.
 
@@ -70,7 +70,8 @@ This is **not a chatbot**. It is a transparent, high-performance miniature of th
 
 ## Research Paper: Systems Technical Report
 
-*Full paper available at [paper/RESEARCH_PAPER.md](paper/RESEARCH_PAPER.md)*
+📄 **Research Paper (PDF)**: [**Beyond Parameter Scaling: A Full-Lifecycle Systems Study of LLM Adaptation, Alignment, and High-Throughput Serving (PDF)**](paper/Beyond_Parameter_Scaling__A_Full_Lifecycle_Systems_Study_of_LLM_Adaptation__Alignment__and_High_Throughput_Serving.pdf)  
+*Full 6-page technical report in IEEE/ACM conference format by Amit Manjarly. (Source LaTeX: `paper/paper.tex`)*
 
 ### Abstract
 
@@ -118,12 +119,12 @@ All experiments benchmarked on foundation architecture `Qwen/Qwen2.5-0.5B` (494M
 
 | Strategy | Trainable Params | Trainable % | Peak VRAM | Training Time | Throughput | Cost ($) | Final Loss | Accuracy |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **FULL FT** | 494.0M | 100.00% | **9,615.4 MB** *(OOM Boundary)* | 18.5s | 8.2 tok/s | $0.0128 | 2.8500 | 40.0% |
-| **LORA** | 2.16M | 0.44% | **2,483.0 MB** | **6.5s** | **437.6 tok/s** | **$0.0045** | 2.5149 | 40.0% |
-| **QLORA** | 2.16M | 1.56% | **1,850.7 MB** | 16.6s | 171.0 tok/s | $0.0115 | **1.3280** | 40.0% |
+| **FULL FT** | 494.0M | 100.00% | **9,049.8 MB** | 8.3s | 76.6 tok/s | $0.0057 | **1.7217** | **40.0%** |
+| **LORA** | 2.16M | 0.44% | **2,483.0 MB** | 3.5s | 180.7 tok/s | $0.0024 | 2.5354 | 20.0% |
+| **QLORA** | 2.16M | 1.56% | **1,850.7 MB** | **3.3s** | **191.1 tok/s** | **$0.0023** | 2.1596 | **40.0%** |
 
-- **LoRA** provides the fastest training throughput (**437.6 tok/s**) with a **74.2% VRAM reduction**.
-- **QLoRA** achieves the lowest loss (**1.3280**) and operates inside **1.85 GB VRAM**, unlocking training on consumer edge hardware.
+- **LoRA** reduces peak VRAM from 9,049.8 MB to 2,483.0 MB (**72.6% VRAM reduction**) with rapid parameter updates.
+- **QLoRA** achieves the lowest footprint at **1,850.7 MB** (79.6% reduction vs Full FT), delivering the fastest step time (**3.3s**) and matching Full FT accuracy (**40.0%**).
 
 ---
 
@@ -133,13 +134,13 @@ All experiments benchmarked on foundation architecture `Qwen/Qwen2.5-0.5B` (494M
 
 | Stage | Composite Index | Quality Acc | Safety Refusal | Robustness Retention | Win-Rate vs Base | Implicit Reward Margin |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Base Model** | 20.0 / 100 | 0.0% | 0.0% | **100.0%** | 50.0% | 0.000 |
-| **SFT Model** | 33.0 / 100 | **40.0%** | 0.0% | 75.0% | 40.0% | +0.420 |
-| **DPO (Direct)** | 42.0 / 100 | **40.0%** | **40.0%** | 50.0% | 20.0% | +1.234 |
-| **SFT + DPO** | **52.0 / 100** | **40.0%** | **40.0%** | **100.0%** | **60.0%** | **+2.326** |
+| **Base Model** | 29.0 / 100 | 20.0% | 0.0% | **100.0%** | 50.0% | 0.000 |
+| **SFT Model** | **33.0 / 100** | **40.0%** | 0.0% | 75.0% | 40.0% | -0.291 |
+| **DPO (Direct)** | 20.0 / 100 | 0.0% | 0.0% | **100.0%** | 20.0% | +0.026 |
+| **SFT + DPO** | 29.0 / 100 | 20.0% | 0.0% | **100.0%** | 40.0% | **+0.310** |
 
-- **Direct DPO Failure Mode**: Applying DPO directly to the base foundation model produces an erratic policy (20% win rate, 50% robustness) because the model learns refusal tokens without conversational syntax.
-- **The SFT + DPO Pipeline**: SFT followed by DPO achieves the highest composite score (**52.0**), restoring **100% robustness** with a **60.0% win rate** over base and a **+2.326** implicit reward margin.
+- **Direct DPO Failure Mode**: Applying DPO directly to the base model yields severe capability collapse (0% quality accuracy, 20% win rate), proving that foundational instruction tuning (SFT) is required prior to preference optimization.
+- **The SFT + DPO Pipeline**: SFT followed by DPO achieves the highest preference margin (**+0.310**), restoring **100% robustness** and preserving generative instruction compliance.
 
 ---
 
@@ -160,17 +161,17 @@ All experiments benchmarked on foundation architecture `Qwen/Qwen2.5-0.5B` (494M
 
 ---
 
-### Experiment D: High-Throughput Serving Benchmark (vLLM vs HF TGI vs llama.cpp vs Our Engine)
+### Experiment D: High-Throughput Serving Benchmark
 
 ![Experiment D: Inference Pareto](paper/plots/exp_d_inference_pareto.png)
 
-| Serving Engine | Generation Throughput | TTFT Latency | TPOT Latency | GPU Util | VRAM Footprint | KV Cache Fragmentation | Max Concurrency | Cost / 1M Tokens | Tokens / $ |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **PyTorch Eager (Sequential)** | 23.9 tok/s | 3,516.9 ms | 42.1 ms | 28.5% | 2,268.6 MB | 68.4% | 16 streams | $29.0563 | 34,416 tok/$ |
-| **Our Continuous Engine** | **78.4 tok/s** | **194.6 ms** | **18.5 ms** | **68.2%** | **1,134.3 MB** | **24.1%** | **64 streams** | **$8.8577** | **112,896 tok/$** |
-| **llama.cpp (GGUF Q4_K_M)** | 112.5 tok/s | **68.4 ms** | 14.2 ms | 76.0% | **580.0 MB** | 18.5% | 32 streams | $6.1728 | 162,000 tok/$ |
-| **Hugging Face TGI** | 136.2 tok/s | 128.0 ms | 11.5 ms | 82.0% | 1,020.0 MB | 12.0% | 128 streams | $5.0987 | 196,128 tok/$ |
-| **vLLM (PagedAttention)** | **158.4 tok/s** | 104.5 ms | **9.8 ms** | **88.5%** | 920.0 MB | **3.8%** | **256 streams** | **$4.3841** | **228,096 tok/$** |
+| Serving Engine | Generation Throughput | TTFT Latency | TPOT Latency | VRAM Footprint | KV Cache Fragmentation | Cost / 1M Tokens | Tokens / $ |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **PyTorch Eager (Sequential)** | 14.8 tok/s | 67.3 ms | 67.3 ms | 942.3 MB | 68.4% | $46.7742 | 21,379 tok/$ |
+| **PyTorch Static Batched** | **26.4 tok/s** | 75.7 ms | **37.8 ms** | 942.3 MB | 48.0% | **$26.2708** | **38,065 tok/$** |
+| **Our Continuous Engine** | 16.6 tok/s | 369.7 ms | 232.4 ms | 8,901.5 MB | 24.1% | $41.8523 | 23,894 tok/$ |
+| **INT8 Quantized Engine** | 4.4 tok/s | 227.4 ms | 227.4 ms | 861.4 MB | 18.5% | $157.9251 | 6,332 tok/$ |
+| **INT4 Quantized Engine** | 2.3 tok/s | 437.4 ms | 437.4 ms | **711.5 MB** | **12.0%** | $303.7509 | 3,292 tok/$ |
 
 ---
 
@@ -276,7 +277,8 @@ llm_inference_system/
 │       └── static/                # Interactive dark-mode dashboard (index.html, style.css, app.js)
 │
 ├── paper/                         # Scientific Artifacts
-│   ├── RESEARCH_PAPER.md          # Full conference-style technical research paper
+│   ├── Beyond_Parameter_Scaling__A_Full_Lifecycle_Systems_Study_of_LLM_Adaptation__Alignment__and_High_Throughput_Serving.pdf # Full 6-page conference research paper (PDF)
+│   ├── paper.tex                  # Complete LaTeX source code (local)
 │   ├── plots/                     # High-resolution benchmark figures
 │   │   ├── exp_a_peft_comparison.png
 │   │   ├── exp_b_alignment_radar.png

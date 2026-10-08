@@ -57,7 +57,7 @@ class SFTTrainer:
     def __init__(self, config: SFTConfig) -> None:
         self.config = config
         self.device = self._resolve_device(config.device)
-        self.dtype = torch.float16 if self.device.type in ("cuda", "mps") else torch.float32
+        self.dtype = torch.bfloat16 if self.device.type in ("cuda", "mps") else torch.float32
 
         logger.info(
             "Initializing SFTTrainer: model=%s, strategy=%s, device=%s",

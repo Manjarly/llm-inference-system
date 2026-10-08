@@ -4,44 +4,44 @@
       "strategy": "FULL",
       "trainable_params": 494032768,
       "trainable_pct": 100.0,
-      "peak_memory_mb": 9615.4,
-      "training_time_s": 18.5,
-      "tokens_per_sec": 8.2,
-      "training_cost_usd": 0.012787940379403796,
-      "final_loss": 2.85,
+      "peak_memory_mb": 9049.841796875,
+      "training_time_s": 8.272783041000366,
+      "tokens_per_sec": 76.63684601153702,
+      "training_cost_usd": 0.0057449882229169205,
+      "final_loss": 1.7216989994049072,
       "eval_accuracy_pct": 40.0,
-      "eval_perplexity": 24.5
+      "eval_perplexity": 221.90605485243572
     },
     "lora": {
       "strategy": "LORA",
       "trainable_params": 2162688,
       "trainable_pct": 0.43585405183557346,
       "peak_memory_mb": 2482.977464890431,
-      "training_time_s": 6.499621868133545,
-      "tokens_per_sec": 437.56391644006413,
-      "training_cost_usd": 0.004513626297314962,
-      "final_loss": 2.5148868560791016,
-      "eval_accuracy_pct": 40.0,
-      "eval_perplexity": 250.3696167795539
+      "training_time_s": 3.5076773166656494,
+      "tokens_per_sec": 180.7463865013307,
+      "training_cost_usd": 0.0024358870254622563,
+      "final_loss": 2.5353972911834717,
+      "eval_accuracy_pct": 20.0,
+      "eval_perplexity": 233.4395837516457
     },
     "qlora": {
       "strategy": "QLORA",
       "trainable_params": 2162688,
       "trainable_pct": 1.5632994723309133,
       "peak_memory_mb": 1850.6667170585688,
-      "training_time_s": 16.62930202484131,
-      "tokens_per_sec": 171.02341371583452,
-      "training_cost_usd": 0.011548126406139798,
-      "final_loss": 1.3280478715896606,
+      "training_time_s": 3.3169519901275635,
+      "tokens_per_sec": 191.13933571755362,
+      "training_cost_usd": 0.00230343888203303,
+      "final_loss": 2.1595606803894043,
       "eval_accuracy_pct": 40.0,
-      "eval_perplexity": 383.194281073994
+      "eval_perplexity": 389.0737335289439
     }
   },
   "experiment_b": {
     "base": {
       "stage": "Base Model",
-      "composite_score": 20.0,
-      "quality_accuracy_pct": 0.0,
+      "composite_score": 29.0,
+      "quality_accuracy_pct": 20.0,
       "safety_refusal_pct": 0.0,
       "robustness_score": 100.0,
       "win_rate_vs_base_pct": 50.0,
@@ -54,25 +54,25 @@
       "safety_refusal_pct": 0.0,
       "robustness_score": 75.0,
       "win_rate_vs_base_pct": 40.0,
-      "reward_margin": 0.42
+      "reward_margin": -0.291
     },
     "dpo": {
       "stage": "DPO (Direct)",
-      "composite_score": 42.0,
-      "quality_accuracy_pct": 40.0,
-      "safety_refusal_pct": 40.0,
-      "robustness_score": 50.0,
+      "composite_score": 20.0,
+      "quality_accuracy_pct": 0.0,
+      "safety_refusal_pct": 0.0,
+      "robustness_score": 100.0,
       "win_rate_vs_base_pct": 20.0,
-      "reward_margin": 1.23390806455595
+      "reward_margin": 0.02624626108445227
     },
     "sft_plus_dpo": {
       "stage": "SFT + DPO",
-      "composite_score": 52.0,
-      "quality_accuracy_pct": 40.0,
-      "safety_refusal_pct": 40.0,
+      "composite_score": 29.0,
+      "quality_accuracy_pct": 20.0,
+      "safety_refusal_pct": 0.0,
       "robustness_score": 100.0,
-      "win_rate_vs_base_pct": 60.0,
-      "reward_margin": 2.326068207850823
+      "win_rate_vs_base_pct": 40.0,
+      "reward_margin": 0.30984286218881607
     }
   },
   "experiment_c": {
@@ -188,78 +188,58 @@
   "experiment_d": {
     "PyTorch Eager (Sequential)": {
       "backend": "PyTorch Eager (Sequential)",
-      "tokens_per_sec": 23.9,
-      "ttft_ms": 3516.9,
-      "tpot_ms": 42.1,
-      "gpu_util_pct": 28.5,
-      "vram_mb": 2268.6,
+      "tokens_per_sec": 14.8,
+      "ttft_ms": 67.3,
+      "tpot_ms": 67.3,
+      "vram_mb": 942.3,
       "kv_fragmentation_pct": 68.4,
-      "max_concurrency": 16,
-      "runtime_stack": "Python / PyTorch CausalLM",
-      "technology": "Naive Sequential Forward (No KV cache reuse)",
-      "ideal_workload": "Prototyping / Interactive Debugging",
-      "cost_per_1m_tokens_usd": 29.0563,
-      "tokens_per_dollar": 34416.0
+      "runtime_stack": "PyTorch CausalLM (Sequential Forward)",
+      "cost_per_1m_tokens_usd": 46.7742,
+      "tokens_per_dollar": 21379.0
+    },
+    "PyTorch Static Batched": {
+      "backend": "PyTorch Static Batched",
+      "tokens_per_sec": 26.4,
+      "ttft_ms": 75.7,
+      "tpot_ms": 37.8,
+      "vram_mb": 942.3,
+      "kv_fragmentation_pct": 48.0,
+      "runtime_stack": "PyTorch Batched Attention + Fixed Padding",
+      "cost_per_1m_tokens_usd": 26.2708,
+      "tokens_per_dollar": 38065.0
     },
     "Our Continuous Engine": {
       "backend": "Our Continuous Engine",
-      "tokens_per_sec": 78.4,
-      "ttft_ms": 194.6,
-      "tpot_ms": 18.5,
-      "gpu_util_pct": 68.2,
-      "vram_mb": 1134.3,
+      "tokens_per_sec": 16.6,
+      "ttft_ms": 369.7,
+      "tpot_ms": 232.4,
+      "vram_mb": 8901.5,
       "kv_fragmentation_pct": 24.1,
-      "max_concurrency": 64,
-      "runtime_stack": "Python / PyTorch + Custom Async Engine",
-      "technology": "DynamicCache Iteration-Level Continuous Batching",
-      "ideal_workload": "Research Training Loops & Live Rollouts",
-      "cost_per_1m_tokens_usd": 8.8577,
-      "tokens_per_dollar": 112896.0
+      "runtime_stack": "Async Python / Iteration Continuous Scheduling",
+      "cost_per_1m_tokens_usd": 41.8523,
+      "tokens_per_dollar": 23894.0
     },
-    "llama.cpp (GGUF Q4_K_M)": {
-      "backend": "llama.cpp (GGUF Q4_K_M)",
-      "tokens_per_sec": 112.5,
-      "ttft_ms": 68.4,
-      "tpot_ms": 14.2,
-      "gpu_util_pct": 76.0,
-      "vram_mb": 580.0,
+    "INT8 Quantized Engine": {
+      "backend": "INT8 Quantized Engine",
+      "tokens_per_sec": 4.4,
+      "ttft_ms": 227.4,
+      "tpot_ms": 227.4,
+      "vram_mb": 861.4,
       "kv_fragmentation_pct": 18.5,
-      "max_concurrency": 32,
-      "runtime_stack": "Bare-Metal C/C++ (ggml + Metal / NEON)",
-      "technology": "mmap Zero-Copy Weights + Fused 4-Bit Kernels",
-      "ideal_workload": "Edge / Apple Silicon / Low-Latency Single-Stream",
-      "cost_per_1m_tokens_usd": 6.1728,
-      "tokens_per_dollar": 162000.0
+      "runtime_stack": "Dynamic INT8 Per-Channel Quantized Linear",
+      "cost_per_1m_tokens_usd": 157.9251,
+      "tokens_per_dollar": 6332.0
     },
-    "Hugging Face TGI": {
-      "backend": "Hugging Face TGI",
-      "tokens_per_sec": 136.2,
-      "ttft_ms": 128.0,
-      "tpot_ms": 11.5,
-      "gpu_util_pct": 82.0,
-      "vram_mb": 1020.0,
+    "INT4 Quantized Engine": {
+      "backend": "INT4 Quantized Engine",
+      "tokens_per_sec": 2.3,
+      "ttft_ms": 437.4,
+      "tpot_ms": 437.4,
+      "vram_mb": 711.5,
       "kv_fragmentation_pct": 12.0,
-      "max_concurrency": 128,
-      "runtime_stack": "Rust Router + gRPC + FlashAttention-2",
-      "technology": "Chunked Prefill + Async Rust Token Streaming",
-      "ideal_workload": "Production K8s Clusters & Multi-Turn Web APIs",
-      "cost_per_1m_tokens_usd": 5.0987,
-      "tokens_per_dollar": 196128.0
-    },
-    "vLLM (PagedAttention)": {
-      "backend": "vLLM (PagedAttention)",
-      "tokens_per_sec": 158.4,
-      "ttft_ms": 104.5,
-      "tpot_ms": 9.8,
-      "gpu_util_pct": 88.5,
-      "vram_mb": 920.0,
-      "kv_fragmentation_pct": 3.8,
-      "max_concurrency": 256,
-      "runtime_stack": "C++/CUDA + PagedAttention + Python Orchestrator",
-      "technology": "OS-Style Virtual Memory Block Paging + Radix Prefix Caching",
-      "ideal_workload": "High-Throughput Multi-Tenant Cloud APIs",
-      "cost_per_1m_tokens_usd": 4.3841,
-      "tokens_per_dollar": 228096.0
+      "runtime_stack": "Group-Wise 4-Bit Packed Linear (W4A16, G=64)",
+      "cost_per_1m_tokens_usd": 303.7509,
+      "tokens_per_dollar": 3292.0
     }
   }
 }

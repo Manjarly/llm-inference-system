@@ -9,7 +9,10 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Dict, Any, List
+import numpy as np
+for attr in ["long", "ulong"]:
+    if not hasattr(np, attr):
+        setattr(np, attr, int)
 
 import torch
 from transformers import AutoTokenizer
@@ -46,10 +49,11 @@ def run_experiment_a(
         cfg = SFTConfig(
             model_id=model_id,
             strategy=strat,
-            batch_size=2,
+            batch_size=1 if strat == "full" else 2,
             gradient_accumulation_steps=2,
             num_epochs=num_epochs,
-            learning_rate=2e-4 if strat != "full" else 5e-5,
+            learning_rate=1e-5 if strat == "full" else 2e-4,
+            max_grad_norm=0.5,
             lora_r=16,
             lora_alpha=32,
         )
@@ -65,24 +69,27 @@ def run_experiment_a(
             time_val = train_metrics.training_time_s
             tps_val = train_metrics.tokens_per_second
             peak_val = train_metrics.peak_memory_mb
-        except (RuntimeError, Exception) as oom_err:
-            logger.warning("Strategy %s hit hardware memory boundary: %s", strat.upper(), oom_err)
-            loss_val = 2.85
-            time_val = 18.5
-            tps_val = 8.2
-            peak_val = 9615.4  # Actual OOM ceiling
-            acc_val = 40.0
-            ppl_val = 24.5
-            train_metrics = SFTTrainMetrics(
-                strategy=strat,
-                total_params=trainer.param_stats["total_params"],
-                trainable_params=trainer.param_stats["trainable_params"],
-                trainable_pct=trainer.param_stats["trainable_pct"],
-                final_loss=loss_val,
-                training_time_s=time_val,
-                tokens_per_second=tps_val,
-                peak_memory_mb=peak_val,
-            )
+        except RuntimeError as err:
+            if "out of memory" in str(err).lower():
+                logger.warning("Strategy %s reached hardware memory ceiling (OOM): %s", strat.upper(), err)
+                loss_val = float("nan")
+                time_val = 0.0
+                tps_val = 0.0
+                peak_val = (trainer.param_stats["total_params"] * 16) / (1024 * 1024)  # Empirical 16 bytes/param AdamW ceiling
+                acc_val = 0.0
+                ppl_val = float("inf")
+                train_metrics = SFTTrainMetrics(
+                    strategy=strat,
+                    total_params=trainer.param_stats["total_params"],
+                    trainable_params=trainer.param_stats["trainable_params"],
+                    trainable_pct=trainer.param_stats["trainable_pct"],
+                    final_loss=loss_val,
+                    training_time_s=time_val,
+                    tokens_per_second=tps_val,
+                    peak_memory_mb=peak_val,
+                )
+            else:
+                raise err
 
         # Theoretical & practical memory breakdown
         mem_breakdown = profiler.profile_training(

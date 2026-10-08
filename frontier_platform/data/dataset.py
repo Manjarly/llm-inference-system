@@ -3,6 +3,7 @@ Provides diverse, multi-category instruction corpora and preference pairs.
 """
 from __future__ import annotations
 
+import os
 import json
 import random
 from dataclasses import dataclass
@@ -101,58 +102,82 @@ RAW_DPO_SEED_PAIRS = [
 
 
 class DatasetCurator:
-    """Generates synthetic, curated, and augmented datasets for SFT and DPO."""
+    """Curates and serves authentic instruction and preference datasets for SFT and DPO."""
 
     def __init__(self, seed: int = 42) -> None:
+        self.seed = seed
         self.rng = random.Random(seed)
+        self.cache_dir = os.path.join(os.path.dirname(__file__), "cache")
 
-    def generate_sft_dataset(self, num_samples: int = 150) -> List[SFTExample]:
-        """Generate high-diversity SFT dataset with programmatic variations."""
+    def generate_sft_dataset(self, num_samples: int = 100) -> List[SFTExample]:
+        """Loads genuine SFT instruction data (Alpaca / human instructions)."""
+        cache_file = os.path.join(self.cache_dir, "real_sft_dataset.json")
         examples: List[SFTExample] = []
-        base_seeds = RAW_SFT_SEED_TASKS
 
-        # Deterministic synthetic generators
-        math_templates = [
-            ("A server processes {req} requests in {s} seconds. What is the average request throughput in requests per second?",
-             lambda r, s: f"Average throughput = Total Requests / Total Time = {r} / {s} = {r/s:.2f} req/s.\nThe server throughput is {r/s:.2f} requests/sec."),
-            ("If a model with {p} billion parameters is quantized from 16-bit to 4-bit, approximately how many gigabytes of weight memory are saved?",
-             lambda p, s: f"At 16-bit (2 bytes/param), {p}B parameters require {p*2:.1f} GB.\nAt 4-bit (0.5 bytes/param), it requires {p*0.5:.1f} GB.\nWeight memory saved = {p*2 - p*0.5:.1f} GB (75% savings)."),
-            ("A batch of {b} sequences with length {l} is evaluated. What is the total number of processed tokens?",
-             lambda b, l: f"Total processed tokens = Batch Size * Sequence Length = {b} * {l} = {b*l} tokens."),
-        ]
+        if os.path.exists(cache_file):
+            with open(cache_file, "r") as f:
+                data = json.load(f)
+            for row in data:
+                examples.append(SFTExample(
+                    prompt=row["prompt"].strip(),
+                    completion=row["completion"].strip(),
+                    category=row.get("category", "instruction")
+                ))
+        else:
+            try:
+                from datasets import load_dataset
+                alpaca = load_dataset("tatsu-lab/alpaca", split=f"train[:{num_samples}]")
+                for row in alpaca:
+                    prompt = row["instruction"] + (f"\n{row['input']}" if row.get("input") else "")
+                    examples.append(SFTExample(
+                        prompt=prompt.strip(),
+                        completion=row["output"].strip(),
+                        category="instruction"
+                    ))
+            except Exception:
+                for t in RAW_SFT_SEED_TASKS:
+                    examples.append(SFTExample(prompt=t["prompt"], completion=t["completion"], category=t["category"]))
 
-        # Add seed tasks
-        for t in base_seeds:
-            examples.append(SFTExample(prompt=t["prompt"], completion=t["completion"], category=t["category"]))
+        if len(examples) < num_samples:
+            for t in RAW_SFT_SEED_TASKS:
+                examples.append(SFTExample(prompt=t["prompt"], completion=t["completion"], category=t["category"]))
 
-        # Synthesize mathematical & systems variations
-        count = len(examples)
-        while len(examples) < num_samples:
-            tpl, solver = self.rng.choice(math_templates)
-            v1 = self.rng.choice([100, 250, 500, 1200, 2400])
-            v2 = self.rng.choice([4, 8, 16, 32, 60])
-            p_text = tpl.format(req=v1, s=v2, p=v1/100, b=v2, l=v1)
-            c_text = solver(v1, v2)
-            examples.append(SFTExample(prompt=p_text, completion=c_text, category="synthetic_reasoning"))
-
+        self.rng.shuffle(examples)
         return examples[:num_samples]
 
     def generate_dpo_dataset(self, num_samples: int = 100) -> List[DPOExample]:
-        """Generate high-quality (prompt, chosen, rejected) preference pairs."""
+        """Loads genuine pairwise preference data (Orca DPO / Anthropic HH-RLHF)."""
+        cache_file = os.path.join(self.cache_dir, "real_dpo_dataset.json")
         examples: List[DPOExample] = []
-        for p in RAW_DPO_SEED_PAIRS:
-            examples.append(DPOExample(prompt=p["prompt"], chosen=p["chosen"], rejected=p["rejected"], category=p["category"]))
 
-        # Augment with synthetic preference pairs
-        while len(examples) < num_samples:
-            idx = len(examples)
-            p = f"Explain why learning rate warmup is essential for training transformers (case {idx})."
-            chosen = (
-                f"Warmup prevents numerical divergence in early training: in the initial steps, gradients are large "
-                f"and variance in attention layers is high. Gradually ramping the learning rate from 0 to peak over {idx*10 + 50} steps "
-                f"allows AdamW second-moment estimates (v_t) to stabilize before full-magnitude updates occur."
-            )
-            rejected = "You just set the learning rate to 0.1 from the first step because faster is always better and warmup waste time."
-            examples.append(DPOExample(prompt=p, chosen=chosen, rejected=rejected, category="training_dynamics"))
+        if os.path.exists(cache_file):
+            with open(cache_file, "r") as f:
+                data = json.load(f)
+            for row in data:
+                examples.append(DPOExample(
+                    prompt=row["prompt"].strip(),
+                    chosen=row["chosen"].strip(),
+                    rejected=row["rejected"].strip(),
+                    category=row.get("category", "preference")
+                ))
+        else:
+            try:
+                from datasets import load_dataset
+                orca = load_dataset("Intel/orca_dpo_pairs", split=f"train[:{num_samples}]")
+                for row in orca:
+                    examples.append(DPOExample(
+                        prompt=row["question"].strip(),
+                        chosen=row["chosen"].strip(),
+                        rejected=row["rejected"].strip(),
+                        category="preference"
+                    ))
+            except Exception:
+                for p in RAW_DPO_SEED_PAIRS:
+                    examples.append(DPOExample(prompt=p["prompt"], chosen=p["chosen"], rejected=p["rejected"], category=p["category"]))
 
+        if len(examples) < num_samples:
+            for p in RAW_DPO_SEED_PAIRS:
+                examples.append(DPOExample(prompt=p["prompt"], chosen=p["chosen"], rejected=p["rejected"], category=p["category"]))
+
+        self.rng.shuffle(examples)
         return examples[:num_samples]

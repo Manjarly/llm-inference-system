@@ -7,6 +7,11 @@ os.environ.setdefault("USE_TF", "0")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+import numpy as np
+for attr in ["long", "ulong"]:
+    if not hasattr(np, attr):
+        setattr(np, attr, int)
+
 import asyncio
 import json
 import logging

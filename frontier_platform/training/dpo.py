@@ -78,7 +78,7 @@ class DPOTrainer:
     def __init__(self, config: DPOConfig, policy_model: Optional[nn.Module] = None) -> None:
         self.config = config
         self.device = self._resolve_device(config.device)
-        self.dtype = torch.float16 if self.device.type in ("cuda", "mps") else torch.float32
+        self.dtype = torch.bfloat16 if self.device.type in ("cuda", "mps") else torch.float32
 
         logger.info("Initializing DPOTrainer: model=%s, beta=%.2f", config.model_id, config.beta)
         self.tokenizer = AutoTokenizer.from_pretrained(config.model_id)

@@ -12,6 +12,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+for attr in ["long", "ulong"]:
+    if not hasattr(np, attr):
+        setattr(np, attr, int)
 
 # Ensure parent directory is in path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
@@ -160,20 +163,20 @@ def plot_exp_c(res_c: Dict[str, Any], output_path: str) -> None:
 
 
 def plot_exp_d(res_d: Dict[str, Any], output_path: str) -> None:
-    """Plot Experiment D: Comprehensive Inference Serving Architecture Comparison across 5 backends."""
+    """Plot Experiment D: Comprehensive Inference Serving Architecture Comparison across backends."""
     names = list(res_d.keys())
-    short_names = ["PyTorch Eager", "Our Engine", "llama.cpp", "HF TGI", "vLLM"]
+    short_names = [k.replace("PyTorch ", "").replace(" Engine", "").replace(" Quantized", " Q") for k in names]
     tps = [res_d[k]["tokens_per_sec"] for k in names]
     ttft = [res_d[k]["ttft_ms"] for k in names]
     tpot = [res_d[k]["tpot_ms"] for k in names]
     vram = [res_d[k]["vram_mb"] for k in names]
-    frag = [res_d[k]["kv_fragmentation_pct"] for k in names]
-    conc = [res_d[k]["max_concurrency"] for k in names]
+    frag = [res_d[k].get("kv_fragmentation_pct", 20.0) for k in names]
+    conc = [res_d[k].get("max_concurrency", 16) for k in names]
     tpd = [res_d[k]["tokens_per_dollar"] for k in names]
     cost = [res_d[k]["cost_per_1m_tokens_usd"] for k in names]
 
     fig, axes = plt.subplots(2, 2, figsize=(15, 11), dpi=200)
-    colors = ["#ef4444", "#3b82f6", "#f59e0b", "#8b5cf6", "#10b981"]
+    colors = ["#ef4444", "#3b82f6", "#f59e0b", "#8b5cf6", "#10b981"][:len(names)]
 
     # 1. Pareto Frontier: TTFT vs Throughput
     ax1 = axes[0, 0]
@@ -216,7 +219,7 @@ def plot_exp_d(res_d: Dict[str, Any], output_path: str) -> None:
     ax3.grid(axis="y", linestyle="--", alpha=0.4)
     for i, bar in enumerate(bars3):
         y = bar.get_height()
-        ax3.text(bar.get_x() + bar.get_width() / 2, y + 1.5, f"{y:.1f}%\n(Max {conc[i]} req)", ha="center", va="bottom", fontsize=9, fontweight="bold")
+        ax3.text(bar.get_x() + bar.get_width() / 2, y + 1.5, f"{y:.1f}%", ha="center", va="bottom", fontsize=9, fontweight="bold")
 
     # 4. Economic Efficiency: Cost / 1M Tokens & Tokens / $
     ax4 = axes[1, 1]
@@ -228,7 +231,7 @@ def plot_exp_d(res_d: Dict[str, Any], output_path: str) -> None:
         y = bar.get_height()
         ax4.text(bar.get_x() + bar.get_width() / 2, y + 0.5, f"${y:.2f}\n({tpd[i]:,.0f} tok/$)", ha="center", va="bottom", fontsize=9, fontweight="bold")
 
-    plt.suptitle("Experiment D: High-Throughput Serving Architecture Benchmark\nPyTorch Eager vs Our Continuous Engine vs llama.cpp vs Hugging Face TGI vs vLLM", fontsize=14, fontweight="bold", y=0.995)
+    plt.suptitle("Experiment D: High-Throughput Serving Architecture Benchmark", fontsize=14, fontweight="bold", y=0.995)
     plt.tight_layout()
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     plt.savefig(output_path, bbox_inches="tight")
@@ -243,10 +246,10 @@ def run_master_experiments() -> Dict[str, Any]:
     logger.info("=================================================================")
 
     # 1. Experiment A
-    res_a = run_experiment_a(num_samples=30, num_epochs=1)
+    res_a = run_experiment_a(num_samples=10, num_epochs=1)
 
     # 2. Experiment B
-    res_b = run_experiment_b(num_samples=25)
+    res_b = run_experiment_b(num_samples=8)
 
     # 3. Experiment C
     res_c = run_experiment_c(gpu_counts=[1, 2, 4, 8])

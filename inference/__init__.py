@@ -5,6 +5,11 @@ import os
 os.environ.setdefault("USE_TF", "0")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
+import numpy as np
+for attr in ["long", "ulong"]:
+    if not hasattr(np, attr):
+        setattr(np, attr, int)
+
 from inference.config import EngineConfig, ModelConfig, SchedulerConfig
 from inference.engine.engine import LLMInferenceEngine
 from inference.engine.request import InferenceRequest, InferenceResponse

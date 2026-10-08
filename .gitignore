@@ -45,5 +45,10 @@ ENV/
 ehthumbs.db
 Thumbs.db
 
-# Logs
+# Logs & Cache
 *.log
+frontier_platform/data/cache/
+
+# Research Paper
+paper.tex
+paper/paper.tex

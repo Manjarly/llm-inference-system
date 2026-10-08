@@ -13,8 +13,13 @@ Measures:
 """
 from __future__ import annotations
 
+import os
+os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = "0.0"
 import logging
-from typing import Dict, Any, List
+import numpy as np
+for attr in ["long", "ulong"]:
+    if not hasattr(np, attr):
+        setattr(np, attr, int)
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -36,7 +41,7 @@ def run_experiment_b(
     """Execute Experiment B comparing Base vs SFT vs DPO vs SFT+DPO."""
     logger.info("=== Running Experiment B: Base vs SFT vs DPO vs SFT+DPO ===")
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    dtype = torch.float16 if device.type == "mps" else torch.float32
+    dtype = torch.bfloat16 if device.type in ("cuda", "mps") else torch.float32
 
     curator = DatasetCurator(seed=42)
     sft_data = curator.generate_sft_dataset(num_samples=num_samples)
@@ -73,7 +78,7 @@ def run_experiment_b(
 
     # 2. SFT Model
     logger.info("Training & Evaluating [2/4] SFT Model...")
-    sft_cfg = SFTConfig(model_id=model_id, strategy="lora", num_epochs=1, batch_size=2)
+    sft_cfg = SFTConfig(model_id=model_id, strategy="lora", num_epochs=1, batch_size=1)
     sft_trainer = SFTTrainer(sft_cfg)
     _ = sft_trainer.train(sft_data)
     sft_eval = run_full_evaluation(sft_trainer.model, tokenizer, model_name="SFT", device=device)
@@ -86,6 +91,18 @@ def run_experiment_b(
             sft_responses.append(tokenizer.decode(gen[0, inp['input_ids'].shape[1]:], skip_special_tokens=True))
 
     sft_win = judge_pairwise_win_rate(sft_responses, base_responses)
+
+    # Empirically measure preference margin (chosen vs rejected negative log likelihood)
+    margins = []
+    with torch.no_grad():
+        for ex in dpo_data[:5]:
+            c_toks = tokenizer(f"<|im_start|>user\n{ex.prompt}<|im_end|>\n<|im_start|>assistant\n{ex.chosen}<|im_end|>", return_tensors="pt").to(device)
+            r_toks = tokenizer(f"<|im_start|>user\n{ex.prompt}<|im_end|>\n<|im_start|>assistant\n{ex.rejected}<|im_end|>", return_tensors="pt").to(device)
+            c_loss = sft_trainer.model(input_ids=c_toks.input_ids, labels=c_toks.input_ids).loss.item()
+            r_loss = sft_trainer.model(input_ids=r_toks.input_ids, labels=r_toks.input_ids).loss.item()
+            margins.append(r_loss - c_loss)
+    sft_margin_val = round(sum(margins) / max(1, len(margins)), 3) if margins else 0.0
+
     results["sft"] = {
         "stage": "SFT",
         "composite_score": sft_eval.composite_index,
@@ -93,12 +110,12 @@ def run_experiment_b(
         "safety_refusal_pct": sft_eval.safety.refusal_rate_pct,
         "robustness_score": sft_eval.robustness.retention_score,
         "win_rate_vs_base_pct": sft_win["win_rate_pct"],
-        "reward_margin": 0.42,
+        "reward_margin": sft_margin_val,
     }
 
     # 3. DPO directly from Base
     logger.info("Training & Evaluating [3/4] DPO (Direct) Model...")
-    dpo_cfg = DPOConfig(model_id=model_id, num_epochs=1, batch_size=2, beta=0.1)
+    dpo_cfg = DPOConfig(model_id=model_id, num_epochs=1, batch_size=1, beta=0.1)
     dpo_direct_trainer = DPOTrainer(dpo_cfg)
     dpo_direct_metrics = dpo_direct_trainer.train(dpo_data)
     dpo_direct_eval = run_full_evaluation(dpo_direct_trainer.policy_model, tokenizer, model_name="DPO (Direct)", device=device)
@@ -145,7 +162,12 @@ def run_experiment_b(
         "safety_refusal_pct": dpo_pipe_eval.safety.refusal_rate_pct,
         "robustness_score": dpo_pipe_eval.robustness.retention_score,
         "win_rate_vs_base_pct": pipe_win["win_rate_pct"],
-        "reward_margin": dpo_pipe_metrics.reward_margin + 0.85,
+        "reward_margin": dpo_pipe_metrics.reward_margin,
     }
+
+    del sft_trainer
+    del dpo_pipeline_trainer
+    if hasattr(torch, "mps") and hasattr(torch.mps, "empty_cache"):
+        torch.mps.empty_cache()
 
     return results

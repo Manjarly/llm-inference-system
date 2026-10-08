@@ -9,7 +9,7 @@ import torch.nn as nn
 from typing import Optional
 
 
-class Int8Linear(nn.Module):
+class Int8Linear(nn.Linear):
     """Linear layer with 8-bit quantized weights and per-channel FP16/FP32 scale.
     Per-channel quantization: scale is computed per output row (out_features, 1).
     Weight values are in [-127, 127] signed int8.
@@ -22,10 +22,11 @@ class Int8Linear(nn.Module):
         bias: bool = False,
         dtype: torch.dtype = torch.float16,
     ) -> None:
-        super().__init__()
+        nn.Module.__init__(self)
         self.in_features = in_features
         self.out_features = out_features
         self.target_dtype = dtype
+        self.weight = nn.Parameter(torch.empty(0, 0, dtype=dtype), requires_grad=False)
 
         # Register buffers (not parameters, to avoid auto-gradients during inference)
         self.register_buffer("weight_int8", torch.zeros((out_features, in_features), dtype=torch.int8))

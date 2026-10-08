@@ -297,7 +297,7 @@ To understand why different organizations choose between **vLLM**, **Hugging Fac
 - **HF TGI** offloads client networking, token streaming, cancellation, and queue scheduling to an asynchronous **Rust web server**, invoking Python/PyTorch strictly for batched GPU tensor execution via gRPC.
 - **vLLM** implements custom C++/CUDA kernels for PagedAttention, keeping Python only as an orchestration coordinator.
 
-#### 4. The Interviewer's Deep-Dive: Critical Systems Questions
+#### 4. Architectural Analysis: Key Systems Design Questions
 
 > [!IMPORTANT]
 > **Question 1: Why did you build your own Continuous Engine instead of just wrapping vLLM or llama.cpp?**  

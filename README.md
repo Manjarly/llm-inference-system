@@ -204,24 +204,6 @@ All experiments benchmarked on foundation architecture `Qwen/Qwen2.5-0.5B` (494M
 
 ---
 
-## The Staff-Engineer Interview Deep-Dive Q&A
-
-### Q1: "Why build your own Continuous Engine instead of just wrapping vLLM or llama.cpp?"
-> **Answer**: External serving engines are specialized for standalone deployment behind HTTP boundaries. When engineering an end-to-end **Training & Evaluation Platform** (specifically online RL with GRPO or active rollouts):
-> 1. External microservices introduce serialization overhead (IPC) and require duplicating model weights in VRAM.
-> 2. They do not expose intermediate transformer activations or dynamic token log-probabilities required for policy gradient updates.
-> 3. Our continuous engine provides full algorithmic control over iteration-level scheduling, DynamicCache mechanics, and zero-IPC rollout integration directly inside PyTorch training loops, running cross-platform on Apple Silicon MPS, NVIDIA CUDA, and CPU.
-
-### Q2: "In which production scenario would you deploy llama.cpp over vLLM, and vice-versa?"
-> **Answer**:
-> - **Deploy llama.cpp** for: On-device/edge AI (Apple Silicon MacBooks, mobile devices, local desktop assistants, CPU-only servers) where single-user latency and zero-dependency memory-mapped GGUF loading are critical (68.4 ms TTFT, 580 MB VRAM).
-> - **Deploy vLLM** for: Multi-tenant cloud SaaS APIs with high concurrent traffic (>100 streams) and shared system prompts, where PagedAttention block sharing and Radix prefix caching achieve superior throughput (158 tok/s) and sub-4% memory waste.
-
-### Q3: "Why does PagedAttention still experience 3.8% fragmentation if it uses paging?"
-> **Answer**: PagedAttention eliminates **external fragmentation**, but retains bounded **internal fragmentation** in the final block of a sequence. If blocks hold $K=16$ tokens, a 17-token generation requires two blocks (capacity: 32 tokens), leaving 15 slots unused. Across large batches, the average internal fragmentation per sequence is bounded by $\frac{K - 1}{2 \times L}$, which for sequence length $L=512$ is $\frac{15}{1024} \approx 1.4\%$, and on short completions averages 3.8%—far superior to contiguous memory allocation (68%+).
-
----
-
 ## Engineering Failure Modes & Post-Mortems
 
 1. **Hardware OOM at Vocabulary Projection in Full Fine-Tuning**:

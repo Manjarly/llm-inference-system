@@ -10,7 +10,7 @@ import torch.nn as nn
 from typing import Optional
 
 
-class Int4Linear(nn.Module):
+class Int4Linear(nn.Linear):
     """Linear layer storing 4-bit weights packed into uint8 with group-wise scaling."""
 
     def __init__(
@@ -21,11 +21,12 @@ class Int4Linear(nn.Module):
         group_size: int = 64,
         dtype: torch.dtype = torch.float16,
     ) -> None:
-        super().__init__()
+        nn.Module.__init__(self)
         self.in_features = in_features
         self.out_features = out_features
         self.group_size = group_size
         self.target_dtype = dtype
+        self.weight = nn.Parameter(torch.empty(0, 0, dtype=dtype), requires_grad=False)
 
         # If in_features is not divisible by group_size, pad conceptually
         self.num_groups_per_row = (in_features + group_size - 1) // group_size
